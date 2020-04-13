@@ -1233,25 +1233,29 @@ const std::array<u8, 4> NsoFile::nso_magic{ { 'N', 'S', 'O', '0' } };
 const std::array<u8, 4> NsoFile::nro_magic{ { 'N', 'R', 'O', '0' } };
 const std::array<u8, 4> NsoFile::mod_magic{ { 'M', 'O', 'D', '0' } };
 
-static bool NsoToElf_Internal(const fs::path& path, const fs::path& elf_path, bool verbose = false) {
+static bool NsoToElf_Internal(const fs::path& path, const fs::path& elf_path, bool verbose = false, bool suppressConsoleWrites = false) {
 	NsoFile nso;
 	if (!nso.Load(path)) {
 		return false;
 	}
-	printf("%s:\n", path.string().c_str());
-	nso.Dump(verbose);
-	if (verbose) {
-		nso.DumpElfInfo();
+	if (!suppressConsoleWrites) {
+		printf("%s:\n", path.string().c_str());
+		nso.Dump(verbose);
+		if (verbose) {
+			nso.DumpElfInfo();
+		}
 	}
 	bool rv = nso.WriteElf(elf_path);
-	puts("");
+	if (!suppressConsoleWrites) {
+		puts("");
+	}
 	return rv;
 }
 
-static bool NsoToElf_Internal(const fs::path& path, bool verbose = false) {
+static bool NsoToElf_Internal(const fs::path& path, bool verbose = false, bool suppressConsoleWrites = false) {
 	fs::path elf_path(path);
 	elf_path.replace_extension(".elf");
-	return NsoToElf_Internal(path, elf_path, verbose);
+	return NsoToElf_Internal(path, elf_path, verbose, suppressConsoleWrites);
 }
 
 extern "C" {
@@ -1259,10 +1263,10 @@ extern "C" {
 #ifdef USE_DECLSPEC
 	__declspec(dllexport)
 #endif
-	bool NsoToElf(const char *path, const char *elf_path, bool verbose = false) {
+	bool NsoToElf(const char *path, const char *elf_path) {
 		fs::path parsed_path(path);
 		fs::path parsed_elf_path(elf_path);
-		return NsoToElf_Internal(parsed_path, parsed_elf_path, verbose);
+		return NsoToElf_Internal(parsed_path, parsed_elf_path, false, true);
 	}
 }
 
